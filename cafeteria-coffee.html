@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafeteria Coffee | Ritual & Essência desde 1988</title>
+    
+    <!-- Scripts & Frameworks (Standalone) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <!-- Preset A Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@1,300;1,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        moss: "#2E4036",
+                        clay: "#CC5833",
+                        cream: "#F2F0E9",
+                        charcoal: "#1A1A1A"
+                    },
+                    fontFamily: {
+                        sans: ["'Plus Jakarta Sans'", "sans-serif"],
+                        outfit: ["'Outfit'", "sans-serif"],
+                        serif: ["'Cormorant Garamond'", "serif"],
+                        mono: ["'IBM Plex Mono'", "monospace"]
+                    },
+                    borderRadius: {
+                        'pill': '9999px',
+                        '2rem': '2rem',
+                        '3rem': '3rem'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #F2F0E9;
+            color: #1A1A1A;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+        /* Noise Texture Overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            opacity: 0.04;
+            z-index: 9999;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Liquid Glass Effect */
+        .liquid-glass {
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            background: linear-gradient(135deg, rgba(242,240,233,0.75), rgba(242,240,233,0.55));
+            border: 1px solid rgba(46,64,54,0.12);
+            box-shadow: 0 8px 40px rgba(46,64,54,0.12), 0 1px 0 rgba(255,255,255,0.6) inset;
+        }
+        .liquid-glass::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: translateX(-100%);
+            animation: shimmer 6s infinite;
+            pointer-events: none;
+        }
+        @keyframes shimmer { 100% { transform: translateX(200%); } }
+
+        /* Navbar initial hidden state (GSAP will animate in) */
+        .nav-container { opacity: 0; transform: translateY(-20px); }
+
+        /* Product card tooltip */
+        .product-tooltip {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            pointer-events: none;
+        }
+        .product-card:hover .product-tooltip {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .product-card:hover .product-img { transform: scale(1.08); }
+        .product-img { transition: transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #F2F0E9; }
+        ::-webkit-scrollbar-thumb { background: #2E4036; border-radius: 10px; }
+
+        @keyframes slide-right {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(400%); }
+        }
+        .selection-highlight::selection { background: #CC5833; color: #F2F0E9; }
+
+        /* ---- MOBILE / TABLET RESPONSIVE ---- */
+        @media (max-width: 768px) {
+            .nav-container {
+                width: calc(100% - 2rem);
+                left: 1rem;
+                transform: none;
+                top: 0;
+                margin-top: 0.75rem;
+                padding: 0.6rem 1rem;
+                flex-wrap: nowrap;
+                gap: 0.5rem;
+            }
+            .hero-line {
+                font-size: clamp(36px, 11vw, 80px) !important;
+            }
+            section {
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+            }
+            .protocol-step {
+                /* On mobile, disable pinned scroll stacking — show as static stack */
+                height: auto !important;
+                min-height: 60vh;
+                padding: 3rem 0;
+            }
+            .slot-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+            /* Stat numbers smaller */
+            .about-stat { font-size: 1.5rem !important; }
+        }
+        @media (max-width: 480px) {
+            .slot-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+    </style>
+</head>
+<body class="selection-highlight">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- MagneticButton ---
+        const MagneticButton = ({ children, className = "", variant = "primary" }) => {
+            const btnRef = useRef(null);
+            const handleMouseEnter = () => gsap.to(btnRef.current, { scale: 1.05, duration: 0.3, ease: "power2.out" });
+            const handleMouseLeave = () => gsap.to(btnRef.current, { scale: 1, duration: 0.3, ease: "power2.out" });
+            const variants = {
+                primary: "bg-clay text-cream",
+                secondary: "bg-moss text-cream",
+                outline: "border-2 border-moss text-moss hover:bg-moss hover:text-cream"
+            };
+            return (
+                <button ref={btnRef}
+                    className={`px-8 py-4 rounded-pill font-bold tracking-tight flex items-center gap-2 group relative overflow-hidden ${variants[variant]} ${className}`}
+                    onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                    <span className="relative z-10">{children}</span>
+                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                </button>
+            );
+        };
+
+        // --- Navbar ---
+        const Navbar = () => {
+            const [scrolled, setScrolled] = useState(false);
+            const navRef = useRef(null);
+
+            useEffect(() => {
+                // Entrance animation
+                gsap.to(navRef.current, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1.2,
+                    ease: "power4.out",
+                    delay: 0.8
+                });
+                const handleScroll = () => setScrolled(window.scrollY > 80);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            return (
+                <nav ref={navRef}
+                    className={`nav-container fixed top-0 left-1/2 -translate-x-1/2 w-[92%] md:w-auto mt-5 z-[1000] px-8 py-3 flex items-center justify-between gap-12 rounded-pill transition-all duration-700 overflow-hidden ${scrolled ? 'liquid-glass' : 'bg-cream/20 border border-moss/10 backdrop-blur-sm'}`}>
+                    <div className="font-extrabold text-xl tracking-tighter text-moss" style={{textShadow:'0 1px 2px rgba(46,64,54,0.15)'}}>Cafeteria Coffee.</div>
+                    <div className="hidden md:flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-moss">
+                        <a href="#cardapio" className="hover:text-clay transition-colors duration-300 relative after:absolute after:bottom-[-2px] after:left-0 after:w-0 after:h-[1.5px] after:bg-clay after:transition-all hover:after:w-full">Menu</a>
+                        <a href="#sobre" className="hover:text-clay transition-colors duration-300 relative after:absolute after:bottom-[-2px] after:left-0 after:w-0 after:h-[1.5px] after:bg-clay after:transition-all hover:after:w-full">Filosofia</a>
+                        <a href="#protocol" className="hover:text-clay transition-colors duration-300 relative after:absolute after:bottom-[-2px] after:left-0 after:w-0 after:h-[1.5px] after:bg-clay after:transition-all hover:after:w-full">Protocolo</a>
+                    </div>
+                    <a href="#booking-section">
+                        <button className="bg-moss text-cream px-6 py-2.5 rounded-pill text-[11px] font-bold uppercase tracking-widest hover:bg-clay transition-colors duration-300 shadow-md">Reserva</button>
+                    </a>
+                </nav>
+            );
+        };
+
+        // --- Hero ---
+        const Hero = () => {
+            const containerRef = useRef(null);
+            useEffect(() => {
+                const ctx = gsap.context(() => {
+                    gsap.from(".hero-line", {
+                        y: 100, opacity: 0, duration: 1.4, stagger: 0.18, ease: "power4.out", delay: 0.2
+                    });
+                    gsap.from(".hero-sub", {
+                        y: 30, opacity: 0, duration: 1, delay: 1, ease: "power3.out"
+                    });
+                }, containerRef);
+                return () => ctx.revert();
+            }, []);
+
+            return (
+                <section ref={containerRef} className="h-screen w-full relative flex flex-col justify-end p-12 md:p-24 overflow-hidden bg-charcoal">
+                    <div className="absolute inset-0 z-0">
+                        <img src="https://images.pexels.com/photos/2074130/pexels-photo-2074130.jpeg?auto=compress&cs=tinysrgb&w=1920"
+                            alt="Cafeteria Coffee Interior" className="w-full h-full object-cover opacity-45 contrast-110" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-charcoal/10" />
+                    </div>
+                    <div className="relative z-10 max-w-5xl overflow-hidden">
+                        <div className="overflow-hidden"><h1 className="hero-line text-[clamp(48px,11vw,120px)] font-extrabold text-cream tracking-tighter leading-[0.88] mb-3">Ritual além da</h1></div>
+                        <div className="overflow-hidden"><h1 className="hero-line text-[clamp(56px,14vw,160px)] font-serif italic text-clay leading-[0.82] mb-12">Essência.</h1></div>
+                        <div className="hero-sub flex flex-col md:flex-row items-start md:items-center gap-8 mt-10">
+                            <a href="#booking-section"><MagneticButton className="px-10 py-5 text-lg">Marcar Presença</MagneticButton></a>
+                            <p className="text-cream/50 max-w-xs text-sm font-medium leading-relaxed">Uma tradição de 37 anos. Cada xícara, um capítulo de história.</p>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        // --- About Section (replaces Feature Cards) ---
+        const About = () => {
+            const secRef = useRef(null);
+            useEffect(() => {
+                gsap.from(".about-reveal", {
+                    scrollTrigger: { trigger: secRef.current, start: "top 70%" },
+                    y: 50, opacity: 0, duration: 0.9, stagger: 0.12, ease: "power3.out"
+                });
+            }, []);
+
+            return (
+                <section ref={secRef} id="sobre" className="py-40 px-10 md:px-24 bg-cream grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+                    {/* Image side */}
+                    <div className="about-reveal relative">
+                        <div className="aspect-[3/4] overflow-hidden rounded-3rem shadow-2xl relative">
+                            <img src="https://images.pexels.com/photos/1855214/pexels-photo-1855214.jpeg?auto=compress&cs=tinysrgb&w=900"
+                                alt="Interior da Cafeteria" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-moss/60 to-transparent" />
+                            <div className="absolute bottom-10 left-10 right-10 text-cream">
+                                <p className="font-mono text-[9px] uppercase tracking-[0.3em] opacity-60 mb-2">Est. 1988 · Tradição Artesanal</p>
+                                <p className="text-xl font-bold leading-tight">Onde cada detalhe tem sabor de história.</p>
+                            </div>
+                        </div>
+                        {/* Floating badge */}
+                        <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-clay text-cream flex flex-col items-center justify-center shadow-xl">
+                            <span className="font-serif italic text-3xl font-bold leading-none">37</span>
+                            <span className="font-mono text-[8px] uppercase tracking-widest opacity-80">anos</span>
+                        </div>
+                    </div>
+
+                    {/* Text side */}
+                    <div className="space-y-10">
+                        <div className="about-reveal">
+                            <p className="text-[10px] uppercase font-bold tracking-[0.4em] text-clay mb-6">Nossa História</p>
+                            <h2 className="text-5xl md:text-7xl font-extrabold text-moss tracking-tighter leading-none mb-8">Desde 1988<br/>aqui estamos.</h2>
+                        </div>
+                        <div className="about-reveal space-y-5 text-moss/60 text-base leading-relaxed">
+                            <p>Fundada em 1988, a Cafeteria Coffee nasceu de um sonho simples: reunir pessoas ao redor de uma xícara de café realmente especial. Três décadas depois, somos parte do cotidiano de gerações.</p>
+                            <p>Nosso espaço é pet-friendly porque acreditamos que os melhores momentos são compartilhados — com amigos, família e, claro, com quem tem quatro patas.</p>
+                        </div>
+                        <div className="about-reveal">
+                            <blockquote className="border-l-4 border-clay pl-8 py-2">
+                                <p className="font-serif italic text-2xl text-clay leading-tight">"Café bom não precisa de pressa. Precisa de presença."</p>
+                                <cite className="text-[10px] uppercase tracking-widest text-moss/30 font-bold mt-4 block">— Fundadores, 1988</cite>
+                            </blockquote>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="about-reveal grid grid-cols-3 gap-6 pt-6 border-t border-moss/10">
+                            {[{n:"37+", l:"Anos de Tradição"},{n:"200k+", l:"Xícaras Servidas"},{n:"Pet", l:"Friendly"}].map((s,i)=>(
+                                <div key={i} className="text-center">
+                                    <div className="text-3xl font-extrabold text-moss tracking-tight">{s.n}</div>
+                                    <div className="text-[9px] uppercase font-bold text-moss/30 tracking-widest mt-1">{s.l}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        // --- Cardápio ---
+        const Cardapio = () => {
+            const [cat, setCat] = useState("cafes");
+            const secRef = useRef(null);
+
+            const data = {
+                cafes: [
+                    {
+                        t: "Espresso Ritual", p: "R$ 12", v: "30ml",
+                        img: "https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Puro, intenso, encorpado",
+                        tem_leite: false, tipo: "Espresso Puro", qty: "30ml"
+                    },
+                    {
+                        t: "Organic Latte", p: "R$ 18", v: "240ml",
+                        img: "https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Cremoso e equilibrado",
+                        tem_leite: true, tipo: "Espresso + Leite Integral", qty: "240ml"
+                    },
+                    {
+                        t: "Cappuccino Arte", p: "R$ 16", v: "180ml",
+                        img: "https://images.pexels.com/photos/29765462/pexels-photo-29765462.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Espuma aveludada e arte",
+                        tem_leite: true, tipo: "Espresso + Leite Vaporizado", qty: "180ml"
+                    },
+                    {
+                        t: "Cold Brew Premium", p: "R$ 22", v: "300ml",
+                        img: "https://images.pexels.com/photos/3879494/pexels-photo-3879494.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Infusão lenta 12h",
+                        tem_leite: false, tipo: "Cold Brew Filtrado", qty: "300ml com gelo"
+                    },
+                    {
+                        t: "Himalayan Tea", p: "R$ 14", v: "200ml",
+                        img: "https://images.pexels.com/photos/1417945/pexels-photo-1417945.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Chá artesanal premiado",
+                        tem_leite: false, tipo: "Chá de Ervas", qty: "200ml"
+                    },
+                    {
+                        t: "Flat White", p: "R$ 17", v: "150ml",
+                        img: "https://images.pexels.com/photos/8736398/pexels-photo-8736398.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Forte, leve na textura",
+                        tem_leite: true, tipo: "Double Espresso + Micro Espuma", qty: "150ml"
+                    }
+                ],
+                doces: [
+                    {
+                        t: "Lemon Tart", p: "R$ 22", v: "Individual",
+                        img: "https://images.pexels.com/photos/32343014/pexels-photo-32343014.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Cítrico, refrescante",
+                        tem_leite: true, tipo: "Tarte de Limão com Merengue", qty: "1 unidade"
+                    },
+                    {
+                        t: "Velvet Cake", p: "R$ 25", v: "Fatia",
+                        img: "https://images.pexels.com/photos/18291168/pexels-photo-18291168.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Aveludado e úmido",
+                        tem_leite: true, tipo: "Red Velvet com Cream Cheese", qty: "Fatia generosa"
+                    },
+                    {
+                        t: "Croissant Amêndoa", p: "R$ 19", v: "1 unidade",
+                        img: "https://images.pexels.com/photos/3892469/pexels-photo-3892469.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Crocante e aromático",
+                        tem_leite: true, tipo: "Croissant Amanteigado", qty: "1 unidade"
+                    }
+                ],
+                salgados: [
+                    {
+                        t: "Artisan Toast", p: "R$ 28", v: "Duo",
+                        img: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Fermentação natural",
+                        tem_leite: false, tipo: "Pão de Fermentação Lenta + Toppings", qty: "2 fatias"
+                    },
+                    {
+                        t: "Quiche Espinafre", p: "R$ 24", v: "Individual",
+                        img: "https://images.pexels.com/photos/5737247/pexels-photo-5737247.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Clássico e nutritivo",
+                        tem_leite: true, tipo: "Quiche com Espinafre e Ricota", qty: "1 porção"
+                    },
+                    {
+                        t: "Bruschetta Premium", p: "R$ 21", v: "3 peças",
+                        img: "https://images.pexels.com/photos/1583884/pexels-photo-1583884.jpeg?auto=compress&cs=tinysrgb&w=600",
+                        desc: "Tomates frescos orgânicos",
+                        tem_leite: false, tipo: "Pão Italiano + Tomate + Manjericão", qty: "3 unidades"
+                    }
+                ]
+            };
+
+            useEffect(() => {
+                gsap.from(".card-item", {
+                    scrollTrigger: { trigger: secRef.current, start: "top 70%" },
+                    y: 40, opacity: 0, duration: 0.7, stagger: 0.1, ease: "power3.out"
+                });
+            }, [cat]);
+
+            const tabLabels = { cafes: "☕ Cafés", doces: "🍰 Doces", salgados: "🥐 Salgados" };
+
+            return (
+                <section ref={secRef} id="cardapio" className="py-40 px-10 md:px-24 bg-cream">
+                    <div className="flex flex-col md:flex-row items-end justify-between mb-20 gap-12">
+                        <div>
+                            <p className="text-[10px] uppercase font-bold tracking-[0.4em] text-clay mb-6">Seleção Curada · 2024</p>
+                            <h2 className="text-6xl md:text-9xl font-extrabold text-moss tracking-tighter leading-none">Cardápio.</h2>
+                        </div>
+                        <div className="flex gap-2 p-1.5 bg-moss/8 border border-moss/10 rounded-pill">
+                            {Object.keys(data).map(c => (
+                                <button key={c} onClick={() => setCat(c)}
+                                    className={`px-7 py-2.5 rounded-pill text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${cat === c ? 'bg-moss text-cream shadow-lg scale-105' : 'text-moss/50 hover:text-moss'}`}>
+                                    {tabLabels[c]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        {data[cat].map((item, i) => (
+                            <div key={`${cat}-${i}`} className="product-card card-item group cursor-pointer">
+                                {/* Image */}
+                                <div className="aspect-[4/5] overflow-hidden rounded-3rem mb-6 relative bg-moss/5">
+                                    <img src={item.img} alt={item.t}
+                                        className="product-img w-full h-full object-cover" />
+                                    {/* Hover overlay tooltip */}
+                                    <div className="product-tooltip absolute inset-0 bg-charcoal/80 backdrop-blur-sm rounded-3rem flex flex-col justify-end p-8">
+                                        <p className="text-[9px] uppercase font-mono tracking-[0.3em] text-clay mb-4">Detalhes do Produto</p>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                                                <span className="text-[10px] uppercase font-bold text-white/40 tracking-widest">Tipo</span>
+                                                <span className="text-[11px] font-bold text-cream text-right max-w-[60%]">{item.tipo}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                                                <span className="text-[10px] uppercase font-bold text-white/40 tracking-widest">Quantidade</span>
+                                                <span className="text-[11px] font-bold text-cream">{item.qty}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] uppercase font-bold text-white/40 tracking-widest">Contém leite</span>
+                                                <span className={`text-[11px] font-bold ${item.tem_leite ? 'text-clay' : 'text-green-400'}`}>
+                                                    {item.tem_leite ? '✓ Sim' : '✗ Não'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-6 pt-4 border-t border-white/10">
+                                            <p className="text-cream/40 text-xs italic">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Info */}
+                                <div className="px-2">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <h4 className="text-xl font-bold text-moss tracking-tight">{item.t}</h4>
+                                        <span className="text-2xl font-serif italic text-clay">{item.p}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-[10px] uppercase font-bold text-moss/30 tracking-widest">{item.v}</p>
+                                        <p className="text-[10px] text-moss/40 italic">{item.desc}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            );
+        };
+
+        // --- Philosophy ---
+        const Philosophy = () => {
+            const containerRef = useRef(null);
+            useEffect(() => {
+                gsap.from(".philosophy-reveal", {
+                    scrollTrigger: { trigger: containerRef.current, start: "top 70%" },
+                    y: 40, opacity: 0, duration: 1, stagger: 0.15, ease: "power3.out"
+                });
+            }, []);
+
+            return (
+                <section ref={containerRef} id="philosophy" className="py-64 px-10 md:px-24 bg-moss text-cream relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-5">
+                        <img src="https://images.pexels.com/photos/1855214/pexels-photo-1855214.jpeg?auto=compress&cs=tinysrgb&w=1920"
+                            className="w-full h-full object-cover grayscale" alt="" />
+                    </div>
+                    <div className="relative z-10 max-w-5xl">
+                        <p className="philosophy-reveal text-[10px] uppercase font-bold tracking-[0.4em] opacity-40 mb-16">O Manifesto</p>
+                        <h2 className="philosophy-reveal text-[clamp(32px,6vw,84px)] font-light leading-tight mb-8">
+                            A maioria das cafeterias foca em: <span className="opacity-30 italic">Volume.</span>
+                        </h2>
+                        <h2 className="philosophy-reveal text-[clamp(40px,8vw,120px)] font-extrabold leading-[0.85]">
+                            Nós focamos em: <span className="text-clay font-serif italic">Conexão.</span>
+                        </h2>
+                    </div>
+                </section>
+            );
+        };
+
+        // --- Protocol (Scroll Stacking) ---
+        const Protocol = () => {
+            const sectionRef = useRef(null);
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+            useEffect(() => {
+                if (isMobile) return; // disable pinning on mobile
+
+                const cards = gsap.utils.toArray(".protocol-step");
+                cards.forEach((card, i) => {
+                    const isLast = i === cards.length - 1;
+                    gsap.to(card, {
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top top",
+                            // Last card: pin it until the booking section starts
+                            end: isLast ? "+=400" : "bottom top",
+                            pin: true,
+                            pinSpacing: isLast ? true : false,
+                            scrub: isLast ? false : 0.4,
+                            // Last card simply exits after pinning period
+                        },
+                        ...(isLast ? {} : {
+                            scale: 0.88,
+                            opacity: 0,
+                            filter: "blur(8px)",
+                            ease: "power2.inOut"
+                        })
+                    });
+                });
+            }, []);
+
+            const steps = [
+                { id: "01", t: "Identação", d: "Login instantâneo via nome e horário desejado. Sem formulários, apenas sua presença." },
+                { id: "02", t: "Sincronia", d: "Verificação de disponibilidade em tempo real em nossa grade de mesas orgânicas." },
+                { id: "03", t: "Imersão", d: "Extração controlada. Um ritual onde cada grama é medida, cada grão respeitado e cada segundo de infusão é sagrado para sua pausa total." }
+            ];
+
+            return (
+                <section id="protocol" ref={sectionRef} className="bg-charcoal overflow-hidden">
+                    {steps.map((s, i) => (
+                        <div key={i} className="protocol-step h-screen w-full flex items-center bg-charcoal px-6 md:px-24">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-20 items-center w-full">
+                                <div className="hidden md:block text-[10rem] md:text-[18rem] font-bold text-white/5 font-mono leading-none tracking-tighter">{s.id}</div>
+                                <div className="space-y-6">
+                                    <p className="text-[10px] uppercase font-mono tracking-[0.3em] text-clay/60">{s.id} — Protocolo</p>
+                                    <h3 className="text-4xl md:text-7xl font-black text-cream tracking-tight">{s.t}</h3>
+                                    <p className="text-cream/50 text-base md:text-xl leading-relaxed max-w-md">{s.d}</p>
+                                    <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                        <div className="h-full bg-clay" style={{width:'30%',animation:'slide-right 3s infinite linear'}} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </section>
+            );
+        };
+
+        // --- Footer ---
+        const Footer = () => (
+            <footer className="bg-charcoal text-cream py-24 px-6 md:px-24 rounded-t-3xl border-t border-white/5">
+                <div className="flex flex-col md:flex-row justify-between items-start gap-16 mb-20">
+                    <div className="space-y-6 max-w-xs">
+                        <div className="text-2xl md:text-3xl font-extrabold tracking-tighter">Cafeteria Coffee.</div>
+                        <p className="text-cream/30 text-sm leading-relaxed">Tradição desde 1988. Café, conexão e memórias que ficam.</p>
+                        <p className="text-clay/70 text-[10px] font-mono uppercase tracking-widest">🐾 Pet Friendly · Est. 1988</p>
+
+                        {/* Social Buttons */}
+                        <div className="pt-2">
+                            <p className="text-[9px] uppercase font-mono tracking-[0.3em] text-white/20 mb-4">Redes Sociais</p>
+                            <div className="flex gap-3 flex-wrap">
+                                <a href="https://instagram.com" target="_blank" rel="noopener"
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-pill border border-white/10 hover:border-clay hover:text-clay transition-all text-[10px] font-bold uppercase tracking-wider">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                                    Instagram
+                                </a>
+                                <a href="https://facebook.com" target="_blank" rel="noopener"
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-pill border border-white/10 hover:border-clay hover:text-clay transition-all text-[10px] font-bold uppercase tracking-wider">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                                    Facebook
+                                </a>
+                                <a href="https://g.page/r/" target="_blank" rel="noopener"
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-pill border border-white/10 hover:border-clay hover:text-clay transition-all text-[10px] font-bold uppercase tracking-wider">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                    Google
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-12 md:gap-20">
+                        <div className="space-y-5">
+                            <span className="text-[10px] uppercase tracking-widest font-mono text-white/20">Acesso</span>
+                            <ul className="space-y-3 text-sm font-medium opacity-50">
+                                <li><a href="#cardapio" className="hover:opacity-100 hover:text-clay transition-all">Cardápio</a></li>
+                                <li><a href="#booking-section" className="hover:opacity-100 hover:text-clay transition-all">Reserva</a></li>
+                                <li><a href="#sobre" className="hover:opacity-100 hover:text-clay transition-all">Nossa História</a></li>
+                            </ul>
+                        </div>
+                        <div className="space-y-5">
+                            <span className="text-[10px] uppercase tracking-widest font-mono text-white/20">Local</span>
+                            <ul className="space-y-2 text-sm opacity-40 leading-relaxed">
+                                <li>Artisan Av, 402</li>
+                                <li>Curitiba, PR</li>
+                                <li>Seg–Dom: 7h–22h</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex flex-col md:flex-row justify-between items-center border-t border-white/5 pt-10 text-[9px] font-mono opacity-20 tracking-widest uppercase gap-4">
+                    <div>© 2026 Cafeteria Coffee · Est. 1988</div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                        Ritual em operação · Mesas disponíveis
+                    </div>
+                </div>
+            </footer>
+        );
+
+        // --- App ---
+        const App = () => (
+            <div>
+                <Navbar />
+                <Hero />
+                <About />
+                <Cardapio />
+                <Philosophy />
+                <Protocol />
+                <div id="booking-section" className="py-56 px-10 md:px-24 bg-charcoal text-center text-cream">
+                    <p className="text-[10px] uppercase font-bold tracking-[0.4em] text-clay mb-8">Pronto para sua visita?</p>
+                    <h2 className="text-[clamp(36px,8vw,100px)] font-extrabold tracking-tighter mb-20 leading-none">Agende seu Ritual.</h2>
+                    
+                    <div className="max-w-4xl mx-auto bg-white/5 backdrop-blur-xl p-10 rounded-3rem border border-white/10 mb-16 grid md:grid-cols-3 gap-8 text-left">
+                        <div className="flex flex-col space-y-2">
+                            <label className="text-[10px] uppercase font-bold text-clay ml-4 tracking-widest opacity-70">Seu Nome</label>
+                            <input type="text" placeholder="Nome para a reserva"
+                                className="bg-white/5 border border-white/10 px-6 py-4 rounded-pill text-sm text-cream placeholder-white/20 focus:outline-none focus:border-clay transition-colors" />
+                        </div>
+                        <div className="flex flex-col space-y-2">
+                            <label className="text-[10px] uppercase font-bold text-clay ml-4 tracking-widest opacity-70">Qtd Pessoas</label>
+                            <input type="number" min="1" max="20" placeholder="Quantos convidados?"
+                                className="bg-white/5 border border-white/10 px-6 py-4 rounded-pill text-sm text-cream placeholder-white/20 focus:outline-none focus:border-clay transition-colors" />
+                        </div>
+                        <div className="flex flex-col space-y-2">
+                            <label className="text-[10px] uppercase font-bold text-clay ml-4 tracking-widest opacity-70">Horário</label>
+                            <input type="time"
+                                className="bg-white/5 border border-white/10 px-6 py-4 rounded-pill text-sm text-cream focus:outline-none focus:border-clay transition-colors" />
+                        </div>
+                    </div>
+
+                    {/* Slot Grid */}
+                    <div className="max-w-4xl mx-auto mb-16">
+                        <p className="text-[10px] uppercase font-mono tracking-[0.3em] text-white/30 mb-6">Disponibilidade de Hoje</p>
+                        <SlotGrid />
+                    </div>
+
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                        <MagneticButton className="px-14 py-6 text-xl">Reservar Agora</MagneticButton>
+                        <button className="text-[11px] font-extrabold uppercase tracking-[0.4em] text-white/30 hover:text-clay transition-colors">Política de Cancelamento</button>
+                    </div>
+                </div>
+                <Footer />
+            </div>
+        );
+
+        // --- Slot Grid ---
+        const SlotGrid = () => {
+            const slots = ["08:00","09:30","11:00","12:30","14:00","15:30","17:00","18:30","20:00","21:30"];
+            const occupied = [1, 3, 6, 8];
+            const [sel, setSel] = useState(null);
+
+            return (
+                <div className="slot-grid grid gap-3" style={{gridTemplateColumns:'repeat(5,1fr)'}}>
+                    {slots.map((s, i) => {
+                        const isOcc = occupied.includes(i);
+                        const isSel = sel === i;
+                        return (
+                            <button key={i} disabled={isOcc} onClick={() => setSel(i)}
+                                className={`py-3 px-2 rounded-xl text-[11px] font-mono font-bold transition-all duration-300 border
+                                    ${isOcc ? 'bg-white/3 border-white/5 text-white/15 cursor-not-allowed line-through' :
+                                    isSel ? 'bg-clay border-clay text-cream scale-105 shadow-lg shadow-clay/30' :
+                                    'border-white/10 text-white/50 hover:border-clay/50 hover:text-clay hover:scale-105'}`}>
+                                {s}
+                                <div className="text-[7px] block uppercase tracking-wider opacity-40 mt-0.5">{isOcc ? 'Ocupado' : isSel ? '✓ Sel.' : 'Livre'}</div>
+                            </button>
+                        );
+                    })}
+                </div>
+            );
+        };
+
+        // Render
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
